@@ -6,4 +6,5 @@ namespace Application.Interfaces.Account;
 public interface IUserService
 {
     Task<ServiceResponse<long>> Register(RegisterDto request);
+    Task<ServiceResponse<string>> Login(LoginDto request);
 }

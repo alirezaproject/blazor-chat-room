@@ -2,7 +2,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
-
+@inject ILocalStorageService LocalStorage
+@implements IDisposable 
 @code
 {
 
@@ -12,6 +13,7 @@
     public string RegisterMessageClass { get; set; } = string.Empty;
 
     public LoginDto LoginDto { get; set; } = new();
+    public string LoginMessage { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -30,8 +32,32 @@
         var result = await AuthService.Register(RegisterDto);
         RegisterMessage = result.Message;
         RegisterMessageClass = result.Success ? "text-success" : "text-danger";
-        await Task.Delay(3000);
-        NavigationManager.NavigateTo("");
+
+     
+    }
+
+    async Task HandleLogin()
+    {
+        var result = await AuthService.Login(LoginDto);
+        LoginMessage = "Loading ...";
+        if (result.Success)
+        {
+            
+            await LocalStorage.SetItemAsync("authToken", result.Data);
+            await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            LoginMessage = string.Empty;
+            NavigationManager.NavigateTo(NavigationManager.Uri,true);
+        }
+        else
+        {
+            LoginMessage = result.Message;
+        }
+
+    }
+
+    public void Dispose()
+    {
+      
     }
 }
 
@@ -311,33 +337,32 @@ else
                     <div class="card shadow-lg">
                         <div class="card-body p-5">
                             <h1 class="fs-4 card-title fw-bold mb-4">Login</h1>
-                            <form method="POST" class="needs-validation" novalidate="" autocomplete="off">
+                            <EditForm Model="LoginDto" OnValidSubmit="HandleLogin">
+                                <DataAnnotationsValidator/>
+
                                 <div class="mb-3">
-                                    <label class="mb-2 text-muted" for="email">E-Mail Address</label>
-                                    <input id="email" type="email" class="form-control" name="email" value="" required autofocus>
-                                    <div class="invalid-feedback">
-                                        Email is invalid
-                                    </div>
+                                    <label class="mb-2 text-muted" for="login-email">Email</label>
+                                    <InputText id="login-email" @bind-Value="LoginDto.Email" class="form-control"/>
+
                                 </div>
 
                                 <div class="mb-3">
                                     <div class="mb-2 w-100">
-                                        <label class="text-muted" for="password">Password</label>
+                                        <label class="text-muted" for="login-password">Password</label>
 
                                     </div>
-                                    <input id="password" type="password" class="form-control" name="password" required>
-                                    <div class="invalid-feedback">
-                                        Password is required
-                                    </div>
+                                    <InputText id="login-password" type="password" @bind-Value="LoginDto.Password" class="form-control"/>
+
                                 </div>
 
                                 <div class="d-flex align-items-center">
-
                                     <button type="submit" class="btn btn-primary">
                                         Login
                                     </button>
                                 </div>
-                            </form>
+                                <ValidationSummary/>
+                                <p class="text-danger">@LoginMessage</p>
+                            </EditForm>
                         </div>
                     </div>
 

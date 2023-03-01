@@ -24,5 +24,13 @@ namespace BlazorChatRoom.Server.Controllers
             return Ok(result);
         }
 
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(LoginDto request)
+        {
+            var response = await _userService.Login(request);
+
+            return Ok(response);
+        }
+
     }
 }

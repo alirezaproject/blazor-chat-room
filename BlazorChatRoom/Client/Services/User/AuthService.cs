@@ -13,10 +13,19 @@ public class AuthService : IAuthService
         _http = http;
     }
 
+    public event Action? Onchange;
+
     public async Task<ServiceResponse<long>> Register(RegisterDto registerDto)
     {
         var result = await _http.PostAsJsonAsync("api/User/Register", registerDto);
-        
+       
         return (await result.Content.ReadFromJsonAsync<ServiceResponse<long>>())!;
+    }
+
+    public async Task<ServiceResponse<string>> Login(LoginDto loginDto)
+    {
+        var result = await _http.PostAsJsonAsync("api/User/Login", loginDto);
+     
+        return (await result.Content.ReadFromJsonAsync<ServiceResponse<string>>())!;
     }
 }
