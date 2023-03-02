@@ -67,32 +67,59 @@ public class UserService : IUserService
         }
         else
         {
-            response.Data = CreateToken(user);
+            response.Data =await CreateToken(user);
         }
 
         return response;
     }
 
-    private string? CreateToken(User user)
+    private async Task<string?> CreateToken(User user)
     {
-        var claim = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.Email),
-            
-        };
-
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration.GetSection("Appsettings:Token").Value));
-
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-        var token = new JwtSecurityToken(claims: claim, expires: DateTime.Now.AddDays(1),
-            signingCredentials: credentials);
-
-        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+        var signingCredentials = GetSigningCredentials();
+        var claims =await GetClaims(user);
+        var (jwtSecurityToken, dateTime) = GenerateTokenOptions(signingCredentials, claims);
+     
+        var jwt = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 
         return jwt;
+    }
+
+
+    private Tuple<JwtSecurityToken, DateTime> GenerateTokenOptions(SigningCredentials signingCredentials,
+        IEnumerable<Claim> claims)
+    {
+        var jwtSettings = _configuration.GetSection("JWtConfig");
+        var expiration = DateTime.Now.AddMinutes(Convert.ToDouble(
+            jwtSettings.GetSection("expires").Value));
+
+        var token = new JwtSecurityToken(
+            issuer: jwtSettings.GetSection("issuer").Value,
+            claims: claims,
+            audience: jwtSettings.GetSection("audience").Value,
+            expires: expiration,
+            signingCredentials: signingCredentials
+        );
+
+        return Tuple.Create(token, expiration);
+    }
+
+    private SigningCredentials GetSigningCredentials()
+    {
+        var key = _configuration["JWtConfig:Key"];
+        var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+
+        return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
+    }
+
+    private async Task<List<Claim>> GetClaims(User user)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Email),
+        };
+
+        return claims;
     }
 
     private static bool VerifyPassowrdHash(string password, byte[] passwordHash, byte[] passwordSalt)

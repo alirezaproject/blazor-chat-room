@@ -32,5 +32,11 @@ namespace BlazorChatRoom.Server.Controllers
             return Ok(response);
         }
 
+        [HttpGet("test")]
+        public async Task<IActionResult> Test()
+        {
+            var name = User.Identity.Name;
+            return Ok();
+        }
     }
 }

@@ -3,7 +3,8 @@
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService LocalStorage
-@implements IDisposable 
+
+@implements IDisposable
 @code
 {
 
@@ -15,6 +16,9 @@
     public LoginDto LoginDto { get; set; } = new();
     public string LoginMessage { get; set; } = string.Empty;
 
+    public List<long> OnlineUserId { get; set; } = new();
+
+
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -24,6 +28,30 @@
         if (user.Identity is { IsAuthenticated: true })
         {
             IsLogin = true;
+
+
+            var email = user.Identity.Name;
+
+            var hubConnection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/chatHub?username="+email))
+                .Build();
+
+            await hubConnection.StartAsync();
+
+            await hubConnection.InvokeAsync("SendMessage", long.Parse("1"), "salam");
+
+            hubConnection.On<string,string>("ReceiveMessage", (senderId, message) =>
+            {
+                Console.WriteLine(message);
+            });
+
+            OnlineUserId = await hubConnection.InvokeAsync<List<long>>("GetOnlineUsers");
+
+    //hubConnection.On<long,string,string>("getNewMessage", (senderId,message,date) =>
+    //{
+    //    Console.WriteLine(message + " | Date : "+date);
+    //});
+
         }
     }
 
@@ -33,7 +61,7 @@
         RegisterMessage = result.Message;
         RegisterMessageClass = result.Success ? "text-success" : "text-danger";
 
-     
+
     }
 
     async Task HandleLogin()
@@ -42,11 +70,11 @@
         LoginMessage = "Loading ...";
         if (result.Success)
         {
-            
+
             await LocalStorage.SetItemAsync("authToken", result.Data);
             await AuthenticationStateProvider.GetAuthenticationStateAsync();
             LoginMessage = string.Empty;
-            NavigationManager.NavigateTo(NavigationManager.Uri,true);
+            NavigationManager.NavigateTo(NavigationManager.Uri, true);
         }
         else
         {
@@ -57,7 +85,7 @@
 
     public void Dispose()
     {
-      
+
     }
 }
 
@@ -295,25 +323,25 @@ else
                         <div class="card-body p-5">
                             <h1 class="fs-4 card-title fw-bold mb-4">Register</h1>
                             <EditForm model="RegisterDto" OnValidSubmit="HandleRegisteration">
-                                <DataAnnotationsValidator/>
+                                <DataAnnotationsValidator />
 
 
                                 <div class="mb-3">
                                     <label class="mb-2 text-muted" for="register-name">Name</label>
-                                    <InputText id="register-name" @bind-Value="RegisterDto.Name" class="form-control"/>
-                                    <ValidationMessage For="() => RegisterDto.Name"/>
+                                    <InputText id="register-name" @bind-Value="RegisterDto.Name" class="form-control" />
+                                    <ValidationMessage For="() => RegisterDto.Name" />
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="mb-2 text-muted" for="register-email">Email</label>
-                                    <InputText id="register-email" @bind-Value="RegisterDto.Email" class="form-control"/>
-                                    <ValidationMessage For="() => RegisterDto.Email"/>
+                                    <InputText id="register-email" @bind-Value="RegisterDto.Email" class="form-control" />
+                                    <ValidationMessage For="() => RegisterDto.Email" />
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="mb-2 text-muted" for="register-email">Password</label>
-                                    <InputText type="password" id="register-password" @bind-Value="RegisterDto.Password" class="form-control"/>
-                                    <ValidationMessage For="() => RegisterDto.Password"/>
+                                    <InputText type="password" id="register-password" @bind-Value="RegisterDto.Password" class="form-control" />
+                                    <ValidationMessage For="() => RegisterDto.Password" />
                                 </div>
 
                                 <div class="align-items-center d-flex">
@@ -325,7 +353,7 @@ else
                                 <div class="@RegisterMessageClass">
                                     <span>@RegisterMessage</span>
                                 </div>
-                                <ValidationSummary/>
+                                <ValidationSummary />
                             </EditForm>
                         </div>
 
@@ -338,11 +366,11 @@ else
                         <div class="card-body p-5">
                             <h1 class="fs-4 card-title fw-bold mb-4">Login</h1>
                             <EditForm Model="LoginDto" OnValidSubmit="HandleLogin">
-                                <DataAnnotationsValidator/>
+                                <DataAnnotationsValidator />
 
                                 <div class="mb-3">
                                     <label class="mb-2 text-muted" for="login-email">Email</label>
-                                    <InputText id="login-email" @bind-Value="LoginDto.Email" class="form-control"/>
+                                    <InputText id="login-email" @bind-Value="LoginDto.Email" class="form-control" />
 
                                 </div>
 
@@ -351,7 +379,7 @@ else
                                         <label class="text-muted" for="login-password">Password</label>
 
                                     </div>
-                                    <InputText id="login-password" type="password" @bind-Value="LoginDto.Password" class="form-control"/>
+                                    <InputText id="login-password" type="password" @bind-Value="LoginDto.Password" class="form-control" />
 
                                 </div>
 
@@ -360,7 +388,7 @@ else
                                         Login
                                     </button>
                                 </div>
-                                <ValidationSummary/>
+                                <ValidationSummary />
                                 <p class="text-danger">@LoginMessage</p>
                             </EditForm>
                         </div>
