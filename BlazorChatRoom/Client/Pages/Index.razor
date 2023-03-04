@@ -3,8 +3,12 @@
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ILocalStorageService LocalStorage
+@inject IUserService UserService
+@inject IToastService ToastService
 
+@using Blazored.Toast.Services
 @implements IDisposable
+
 @code
 {
 
@@ -18,6 +22,7 @@
 
     public List<long> OnlineUserId { get; set; } = new();
 
+    public List<UserDto> Users { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,24 +38,36 @@
             var email = user.Identity.Name;
 
             var hubConnection = new HubConnectionBuilder()
-                .WithUrl(NavigationManager.ToAbsoluteUri("/chatHub?username="+email))
+                .WithUrl(NavigationManager.ToAbsoluteUri("/chatHub?username=" + email))
                 .Build();
 
             await hubConnection.StartAsync();
 
             await hubConnection.InvokeAsync("SendMessage", long.Parse("1"), "salam");
 
-            hubConnection.On<string,string>("ReceiveMessage", (senderId, message) =>
+            hubConnection.On<string, string>("ReceiveMessage", (senderId, message) =>
             {
                 Console.WriteLine(message);
             });
 
-            OnlineUserId = await hubConnection.InvokeAsync<List<long>>("GetOnlineUsers");
+            Users = await hubConnection.InvokeAsync<List<UserDto>>("GetUsers",user.Identity.Name);
 
-    //hubConnection.On<long,string,string>("getNewMessage", (senderId,message,date) =>
-    //{
-    //    Console.WriteLine(message + " | Date : "+date);
-    //});
+            hubConnection.On<string, long>("UserConnected", (connectionId, username) =>
+            {
+                var setUserToOnline = Users.First(x => x.Id == username);
+                setUserToOnline.IsOnline = true;
+                StateHasChanged();
+                ToastService.ShowSuccess(setUserToOnline.Name +" Connected !");
+            });
+
+            hubConnection.On<string, long>("UserDisconnected", (connectionId, username) =>
+            {
+                var setUserToOffline= Users.First(x => x.Id == username);
+                setUserToOffline.IsOnline = false;
+                StateHasChanged();
+                ToastService.ShowError(setUserToOffline.Name + " Disconnected !");
+            });
+            
 
         }
     }
@@ -116,18 +133,22 @@
                                         </div>
                                     </div>
                                     <ul class="users">
-                                        <li class="person" data-chat="person1">
-                                            <div class="user">
-                                                <img src="https://www.bootdey.com/img/Content/avatar/avatar3.png"
-                                                     alt="Retail Admin" />
-                                                <span class="status busy"></span>
-                                            </div>
-                                            <p class="name-time">
-                                                <span class="name">Steve Bangalter</span>
-                                                <span class="time">15/02/2019</span>
-                                            </p>
-                                        </li>
-                                        <li class="person" data-chat="person1">
+                                        @foreach (var user in Users)
+                                        {
+                                            <li class="person" data-chat="person">
+                                                <div class="user">
+                                                    <img src="@user.PictureName"
+                                                         alt="@user.Name" />
+                                                    <span class="status @(user.IsOnline ? "online" : "offline")"></span>
+                                                </div>
+                                                <p class="name-time">
+                                                    <span class="name">@user.Name</span>
+                                                    <span class="time">@user.Date</span>
+                                                </p>
+                                            </li>
+                                        }
+
+                                     @*   <li class="person" data-chat="person1">
                                             <div class="user">
                                                 <img src="https://www.bootdey.com/img/Content/avatar/avatar1.png"
                                                      alt="Retail Admin" />
@@ -181,7 +202,7 @@
                                                 <span class="name">Michael Jordan</span>
                                                 <span class="time">05/02/2019</span>
                                             </p>
-                                        </li>
+                                        </li>*@
                                     </ul>
                                 </div>
                             </div>

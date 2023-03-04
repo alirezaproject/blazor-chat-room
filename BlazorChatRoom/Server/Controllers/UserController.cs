@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Account;
+﻿using System.Security.Claims;
+using Application.Interfaces.Account;
 using BlazorChatRoom.Shared.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -32,11 +33,12 @@ namespace BlazorChatRoom.Server.Controllers
             return Ok(response);
         }
 
-        [HttpGet("test")]
-        public async Task<IActionResult> Test()
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
         {
-            var name = User.Identity.Name;
-            return Ok();
+            var userId = long.Parse(HttpContext.User.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value);
+            var response = await _userService.GetUsers(userId);
+            return Ok(response);
         }
     }
 }

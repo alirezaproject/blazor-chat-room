@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Application.Interfaces.Account;
 using Application.Interfaces.Context;
 using BlazorChatRoom.Shared.DTOs.ChatDto;
 using Microsoft.AspNetCore.SignalR;
@@ -10,11 +11,13 @@ public class ChatHub : Hub
 {
     private readonly IDataBaseContext _context;
     private static readonly List<UserConnection> Connections = new();
-
-    public ChatHub(IDataBaseContext context)
+    private readonly IUserService _userService;
+    
+    public ChatHub(IDataBaseContext context, IUserService userService)
     {
         _context = context;
-     
+        _userService = userService;
+       
     }
 
 
@@ -24,35 +27,47 @@ public class ChatHub : Hub
 
     }
 
-    public async Task<List<long>> GetOnlineUsers()
+    public async Task<List<UserDto>> GetUsers(string  username)
     {
-        var users = Connections.Select(c => c.UserId).ToList();
+        var userId =await _userService.GetUserIdByEmail(username);
+        var users = await _userService.GetUsers(userId);
+        var onlineUsersId = Connections.Select(c => c.UserId).ToList();
+
+        foreach (var user in users)
+        {
+            if (onlineUsersId.Contains(user.Id))
+            {
+                user.IsOnline = true;
+            }
+        }
+
         return await Task.FromResult(users);
     }
 
-    public override Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
     {
         var context = Context.GetHttpContext();
 
         var email = context!.Request.Query["username"].ToString();
         var connectionId = Context.ConnectionId;
-       
+        var userId = _context.Users.First(x => x.Email == email).Id;
         Connections.Add(new UserConnection()
         {
             ConnectionId = connectionId,
-            UserId =_context.Users.First(x => x.Email == email).Id
+            UserId =userId
         });
-
-        return base.OnConnectedAsync();
+        await Clients.All.SendAsync("UserConnected", Context.ConnectionId, userId);
+        
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var connection = Connections.FirstOrDefault(c => c.ConnectionId == Context.ConnectionId);
         if (connection != null)
         {
             Connections.Remove(connection);
+            await Clients.All.SendAsync("UserDisconnected", Context.ConnectionId, connection.UserId);
         }
-        return base.OnDisconnectedAsync(exception);
+     
     }
 }

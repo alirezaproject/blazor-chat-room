@@ -9,6 +9,8 @@ using Domain.Entities;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using BlazorChatRoom.Shared.DTOs.ChatDto;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.Services.Account;
@@ -17,11 +19,12 @@ public class UserService : IUserService
 {
     private readonly IDataBaseContext _context;
     private readonly IConfiguration _configuration;
-
+   
     public UserService(IDataBaseContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
+     
     }
 
     public async Task<ServiceResponse<long>> Register(RegisterDto request)
@@ -73,6 +76,24 @@ public class UserService : IUserService
         return response;
     }
 
+    public async Task<List<UserDto>> GetUsers(long userId)
+    {
+       
+        return await _context.Users.Where(x =>
+            x.Id != userId).Select(s => new UserDto()
+        {
+                Name = s.Name,
+                Date = s.CreationDate.ToString("d"),
+                Id = s.Id,
+                PictureName = s.Picture
+        }).ToListAsync();
+    }
+
+    public async Task<long> GetUserIdByEmail(string email)
+    {
+        return (await _context.Users.FirstOrDefaultAsync(x => x.Email == email))!.Id;
+    }
+
     private async Task<string?> CreateToken(User user)
     {
         var signingCredentials = GetSigningCredentials();
@@ -111,15 +132,15 @@ public class UserService : IUserService
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
 
-    private async Task<List<Claim>> GetClaims(User user)
+    private  Task<List<Claim>> GetClaims(User user)
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Email),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Email),
         };
 
-        return claims;
+        return Task.FromResult(claims);
     }
 
     private static bool VerifyPassowrdHash(string password, byte[] passwordHash, byte[] passwordSalt)
