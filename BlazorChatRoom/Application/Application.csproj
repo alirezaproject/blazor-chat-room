@@ -9,6 +9,7 @@
   <ItemGroup>
     <Folder Include="Interfaces\Context\" />
     <Folder Include="Interfaces\Account\" />
+    <Folder Include="Interfaces\Message\" />
     <Folder Include="Services\Account\" />
   </ItemGroup>
 

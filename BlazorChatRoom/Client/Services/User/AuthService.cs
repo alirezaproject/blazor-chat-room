@@ -13,7 +13,6 @@ public class AuthService : IAuthService
         _http = http;
     }
 
-    public event Action? Onchange;
 
     public async Task<ServiceResponse<long>> Register(RegisterDto registerDto)
     {

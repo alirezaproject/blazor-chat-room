@@ -13,4 +13,7 @@ public class User : BaseEntity<long>
     public DateTime? LastOnline { get; set; }
     public bool IsOnline { get; set; }
 
+
+    public virtual ICollection<ChatMessage> ChatMessagesFromUsers { get; set; } = default!;
+    public virtual ICollection<ChatMessage> ChatMessagesToUsers { get; set; } = default!;
 }

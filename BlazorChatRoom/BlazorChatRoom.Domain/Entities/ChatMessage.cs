@@ -5,13 +5,13 @@ namespace Domain.Entities;
 
 public class ChatMessage : BaseEntity<long>
 {
-    public long SenderId { get; set; } = default!;
-    public long ReceiverId { get; set; } = default!;
-    public string Text { get; set; } = string.Empty;
-    public MessageType MessageType { get; set; } = MessageType.Text;
-    public MessageStatus MessageStatus { get; set; } = MessageStatus.Delivered;
-    public DateTime Timestamp { get; set; } = DateTime.Now;
+    public long FromUserId { get; set; }
+    public long ToUserId { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public DateTime CreatedDate { get; set; }
 
+    public virtual User FromUser { get; set; } = default!;
+    public virtual User ToUser { get; set; } = default!;
 
 }
 

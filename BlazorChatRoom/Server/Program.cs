@@ -1,7 +1,9 @@
 using System.Text;
 using Application.Interfaces.Account;
 using Application.Interfaces.Context;
+using Application.Interfaces.Message;
 using Application.Services.Account;
+using Application.Services.Message;
 using BlazorChatRoom.Server.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -20,6 +22,7 @@ builder.Services.AddDbContext<DataBaseContext>(optionsBuilder => optionsBuilder.
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDataBaseContext, DataBaseContext>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 
 builder.Services.AddAuthentication(options =>
     {
