@@ -9,8 +9,10 @@ using Domain.Entities;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using BlazorChatRoom.Shared.DTOs.ChatDto;
+using BlazorChatRoom.Shared.DTOs.Auth;
+using BlazorChatRoom.Shared.DTOs.User;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.Services.Account;
@@ -19,37 +21,34 @@ public class UserService : IUserService
 {
     private readonly IDataBaseContext _context;
     private readonly IConfiguration _configuration;
-   
-    public UserService(IDataBaseContext context, IConfiguration configuration)
+    private readonly UserManager<User> _userManager;
+
+    public UserService(IDataBaseContext context, IConfiguration configuration, UserManager<User> userManager)
     {
         _context = context;
         _configuration = configuration;
-     
+        _userManager = userManager;
     }
 
-    public async Task<ServiceResponse<long>> Register(RegisterDto request)
+    public async Task<ServiceResponse<string>> Register(RegisterDto request)
     {
         if (await UserExists(request.Email))
         {
-            return new ServiceResponse<long>() { Success = false, Message = "User already exists." };
+            return new ServiceResponse<string>() { Success = false, Message = "User already exists." };
         }
-
-        CreatePasswordHash(request.Password, out var passwordHash, out var passwordSalt);
 
         var user = new User()
         {
-            Email = request.Email,
             Name = request.Name,
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
-            Picture = "/Img/No-photo.png",
-            
+            Picture = "/images/no-photo.jpg",
+
         };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        await _userManager.CreateAsync(user);
+   
+        
 
-        return new ServiceResponse<long>() { Data = user.Id, Success = true ,Message = "Registration Successfull !"};
+        return new ServiceResponse<string>() { Data = user.Id, Success = true ,Message = "Registration Successfull !"};
     }
 
     public async Task<ServiceResponse<string>> Login(LoginDto request)
@@ -63,38 +62,49 @@ public class UserService : IUserService
             response.Success = false;
             response.Message = "User Not found";
         }
-        else if (!VerifyPassowrdHash(request.Password,user.PasswordHash,user.PasswordSalt))
+        else if (await _userManager.CheckPasswordAsync(user, request.Password) == false)
         {
             response.Success = false;
             response.Message = "Wrong Password";
         }
         else
         {
-            response.Data =await CreateToken(user);
+            response.Data = await CreateToken(user);
         }
 
         return response;
     }
 
-    public async Task<List<UserDto>> GetUsers(long userId)
+    public async Task<List<UserDto>> GetUsers(string userId)
     {
        
         return await _context.Users.Where(x =>
             x.Id != userId).Select(s => new UserDto()
         {
-                Name = s.Name,
+                Name = s.Email,
                 Date = s.CreationDate.ToString("d"),
                 Id = s.Id,
-                PictureName = s.Picture
+                Picture = string.IsNullOrWhiteSpace(s.Picture) ? "/No-photo.png" : s.Picture
         }).ToListAsync();
     }
 
-    public async Task<long> GetUserIdByEmail(string email)
+    public async Task<UserDto> GetUserDetail(string userId)
+    {
+        return await _context.Users.Where(user => user.Id == userId).Select(s => new UserDto()
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Picture = s.Picture,
+            Date = s.CreationDate.ToString("d")
+        }).FirstOrDefaultAsync() ?? new UserDto();
+    }
+
+    public async Task<string> GetUserIdByEmail(string email)
     {
         return (await _context.Users.FirstOrDefaultAsync(x => x.Email == email))!.Id;
     }
 
-    private async Task<string?> CreateToken(User user)
+    private async Task<string> CreateToken(User user)
     {
         var signingCredentials = GetSigningCredentials();
         var claims =await GetClaims(user);

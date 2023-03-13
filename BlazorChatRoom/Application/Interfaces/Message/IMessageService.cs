@@ -1,9 +1,9 @@
-﻿using BlazorChatRoom.Shared.DTOs.Message;
+﻿using BlazorChatRoom.Shared.DTOs.Chat;
 
 namespace Application.Interfaces.Message;
 
 public interface IMessageService
 {
     Task SaveChatMessage(MessageDto message);
-    Task<List<MessageDto>> GetAllMessages();
+    Task<List<MessageDto>> GetConversationAsync(string contactId, string userId);
 }

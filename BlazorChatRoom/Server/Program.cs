@@ -1,56 +1,46 @@
-using System.Text;
 using Application.Interfaces.Account;
 using Application.Interfaces.Context;
 using Application.Interfaces.Message;
 using Application.Services.Account;
 using Application.Services.Message;
-using BlazorChatRoom.Server.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.ResponseCompression;
+using BlazorChatRoom.Server;
+using Domain.Entities;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Persistence.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSignalR();
 // Add services to the container.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<DataBaseContext>(options =>
+    options.UseSqlServer(connectionString));
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+builder.Services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddEntityFrameworkStores<DataBaseContext>();
+
+builder.Services.AddIdentityServer()
+    .AddApiAuthorization<User, DataBaseContext>();
+
+builder.Services.AddAuthentication()
+    .AddIdentityServerJwt();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
-builder.Services.AddSignalR();
-builder.Services.AddDbContext<DataBaseContext>(optionsBuilder => optionsBuilder.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDataBaseContext, DataBaseContext>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(configureOptions =>
-    {
-        configureOptions.TokenValidationParameters = new TokenValidationParameters()
-        {
-            ValidIssuer = builder.Configuration["JWtConfig:issuer"],
-            ValidAudience = builder.Configuration["JWtConfig:audience"],
-            IssuerSigningKey =
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWtConfig:Key"])),
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-        };
-        configureOptions.SaveToken = true; // HttpContext.GetTokenAsunc();
-     
-    });
 
-builder.Services.AddHttpContextAccessor();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseMigrationsEndPoint();
     app.UseWebAssemblyDebugging();
 }
 else
@@ -67,8 +57,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseIdentityServer();
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapRazorPages();
 app.MapControllers();

@@ -5,11 +5,10 @@ namespace Domain.Entities;
 
 public class ChatMessage : BaseEntity<long>
 {
-    public long FromUserId { get; set; }
-    public long ToUserId { get; set; }
+    public string FromUserId { get; set; } = string.Empty;
+    public string ToUserId { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
-    public DateTime CreatedDate { get; set; }
-
+    
     public virtual User FromUser { get; set; } = default!;
     public virtual User ToUser { get; set; } = default!;
 

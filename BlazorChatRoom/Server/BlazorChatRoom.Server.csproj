@@ -4,30 +4,26 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>BlazorChatRoom.Server-9ec0ba04-c7a3-4767-b6d4-e17023f2bbdc</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.14">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.14" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Persistence\Persistence.csproj" />
-    <ProjectReference Include="..\Application\Application.csproj" />
     <ProjectReference Include="..\Client\BlazorChatRoom.Client.csproj" />
+    <ProjectReference Include="..\Persistence\Persistence.csproj" />
     <ProjectReference Include="..\Shared\BlazorChatRoom.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Hubs\" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="6.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.ApiAuthorization.IdentityServer" Version="6.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.14" />
   </ItemGroup>
-
 
 </Project>

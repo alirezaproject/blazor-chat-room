@@ -11,6 +11,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\Message\" />
+    <Folder Include="DTOs\Chat\" />
+    <Folder Include="DTOs\Auth\" />
+    <Folder Include="DTOs\User\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Duende.IdentityServer.EntityFramework.Storage" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorChatRoom.Domain\Domain.csproj" />
   </ItemGroup>
 </Project>
