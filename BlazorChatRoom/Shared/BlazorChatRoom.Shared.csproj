@@ -14,6 +14,7 @@
     <Folder Include="DTOs\Chat\" />
     <Folder Include="DTOs\Auth\" />
     <Folder Include="DTOs\User\" />
+    <Folder Include="Wrapper\" />
   </ItemGroup>
 
   <ItemGroup>
